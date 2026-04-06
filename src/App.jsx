@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 const _s = document.createElement("style");
@@ -344,6 +344,28 @@ function HLText({ text, highlights, color }) {
   for (const h of sorted) { if(h.start>cur) segs.push({t:text.slice(cur,h.start),hl:false}); const s=Math.max(h.start,cur); if(s<h.end){segs.push({t:text.slice(s,h.end),hl:true});cur=h.end;} }
   if(cur<text.length) segs.push({t:text.slice(cur),hl:false});
   return <div style={{whiteSpace:"pre-wrap",lineHeight:2}}>{segs.map((seg,i)=>seg.hl?<mark key={i} style={{backgroundColor:color+"22",borderBottom:`2px solid ${color}`,borderRadius:2,color:"inherit",padding:"1px 0"}}>{seg.t}</mark>:<span key={i}>{seg.t}</span>)}</div>;
+}
+
+function EditableHLText({ text, onChange, highlights, color }) {
+  const textRef = useRef(null);
+  const hlRef = useRef(null);
+  const syncScroll = () => { if (hlRef.current && textRef.current) { hlRef.current.scrollTop = textRef.current.scrollTop; } };
+  const sorted = highlights?.length ? [...highlights].sort((a,b)=>a.start-b.start) : [];
+  const segs = [];
+  if (sorted.length) {
+    let cur = 0;
+    for (const h of sorted) { if(h.start>cur) segs.push({t:text.slice(cur,h.start),hl:false}); const s=Math.max(h.start,cur); if(s<h.end){segs.push({t:text.slice(s,h.end),hl:true});cur=h.end;} }
+    if(cur<text.length) segs.push({t:text.slice(cur),hl:false});
+  }
+  const shared = {fontFamily:'"Cormorant Garamond",Georgia,serif',fontSize:16,lineHeight:2,padding:"16px 20px",width:"100%",minHeight:"55vh",whiteSpace:"pre-wrap",wordWrap:"break-word",overflowWrap:"break-word",margin:0,border:"1px solid #e0dbd3",borderRadius:4,boxSizing:"border-box",letterSpacing:"normal"};
+  return (
+    <div style={{position:"relative"}}>
+      <div ref={hlRef} aria-hidden="true" style={{...shared,position:"absolute",top:0,left:0,height:"100%",overflow:"hidden",pointerEvents:"none",color:"#28231e",backgroundColor:"#fff",zIndex:0}}>
+        {sorted.length ? segs.map((seg,i)=>seg.hl?<mark key={i} style={{backgroundColor:color+"22",borderBottom:`2px solid ${color}`,borderRadius:2,color:"inherit",padding:"1px 0"}}>{seg.t}</mark>:<span key={i}>{seg.t}</span>) : text}
+      </div>
+      <textarea ref={textRef} value={text} onChange={onChange} onScroll={syncScroll} style={{...shared,position:"relative",resize:"none",outline:"none",backgroundColor:"transparent",color:"transparent",caretColor:"#28231e",zIndex:1}}/>
+    </div>
+  );
 }
 
 function ScoreBadge({ count, wc }) {
@@ -1240,6 +1262,8 @@ export default function App() {
   const [marketLoad, setMarketLoad] = useState(false);
   const [marketError, setMarketError] = useState(null);
   const [editMode, setEditMode] = useState(false);
+  const [editHL, setEditHL] = useState([]);
+  const editTimerRef = useRef(null);
   const [kdpData, setKdpData] = useState(()=>{try{return JSON.parse(localStorage.getItem("manuscrit_kdp")||"null");}catch{return null;}});
   const [kdpLoad, setKdpLoad] = useState(false);
   const [kdpError, setKdpError] = useState(null);
@@ -1251,6 +1275,16 @@ export default function App() {
 
   const setTextPersist = (v) => { setText(v); localStorage.setItem("manuscrit_text", v); };
   const setPhasePersist = (v) => { setPhase(v); localStorage.setItem("manuscrit_phase", v); };
+
+  useEffect(() => {
+    if (!editMode) return;
+    if (editTimerRef.current) clearTimeout(editTimerRef.current);
+    editTimerRef.current = setTimeout(() => {
+      const r = ALL.find(rep => rep.id === activeId);
+      setEditHL(r?.analyze ? r.analyze(text) : []);
+    }, 300);
+    return () => clearTimeout(editTimerRef.current);
+  }, [text, editMode, activeId]);
 
   const [autoAnalyzed, setAutoAnalyzed] = useState(false);
   if (!autoAnalyzed && phase === "done" && text.trim() && Object.keys(cache).length === 0) {
@@ -1429,7 +1463,7 @@ const truncateForAI = (t) => t.length > AI_MAX_CHARS
               <div style={{maxWidth:760,margin:"0 auto",fontSize:16,position:"relative"}}>
                 {!editMode ? (
                   <>
-                    <button onClick={()=>setEditMode(true)} style={{position:"absolute",top:-8,right:0,background:"none",border:`1px solid ${BORDER}`,borderRadius:3,cursor:"pointer",fontFamily:"DM Mono",fontSize:9,color:"#9a9088",padding:"3px 10px",letterSpacing:1.5,zIndex:5}}>✎ EDITAR</button>
+                    <button onClick={()=>{setEditMode(true);setEditHL(cache[activeId]||[]);}} style={{position:"absolute",top:-8,right:0,background:"none",border:`1px solid ${BORDER}`,borderRadius:3,cursor:"pointer",fontFamily:"DM Mono",fontSize:9,color:"#9a9088",padding:"3px 10px",letterSpacing:1.5,zIndex:5}}>✎ EDITAR</button>
                     {isPacing
                       ? <PacingText paras={pacingData}/>
                       : (isAI||isMF||isSG||isAiScore||isStyleComp||isBible||isKDP)
@@ -1440,11 +1474,11 @@ const truncateForAI = (t) => t.length > AI_MAX_CHARS
                 ) : (
                   <div>
                     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,padding:"8px 14px",backgroundColor:"#fef9c3",border:"1px solid #fde047",borderRadius:4}}>
-                      <span style={{fontFamily:"DM Mono",fontSize:11,color:"#713f12",flex:1}}>✎ Modo edição — edite o texto e clique em Concluir para reanalisar</span>
+                      <span style={{fontFamily:"DM Mono",fontSize:11,color:"#713f12",flex:1}}>✎ Modo edição — os destaques atualizam em tempo real</span>
                       <button onClick={analyze} style={{padding:"5px 14px",backgroundColor:"#9a7a35",color:"#fff",border:"none",borderRadius:3,cursor:"pointer",fontFamily:"DM Mono",fontSize:10,letterSpacing:1.5}}>✓ CONCLUIR</button>
                       <button onClick={()=>setEditMode(false)} style={{padding:"5px 14px",backgroundColor:"transparent",color:"#9a9088",border:`1px solid ${BORDER}`,borderRadius:3,cursor:"pointer",fontFamily:"DM Mono",fontSize:10,letterSpacing:1.5}}>CANCELAR</button>
                     </div>
-                    <textarea value={text} onChange={e=>setTextPersist(e.target.value)} style={{width:"100%",minHeight:"55vh",resize:"none",border:`1px solid ${BORDER}`,borderRadius:4,outline:"none",backgroundColor:"#fff",color:"#28231e",fontFamily:'"Cormorant Garamond",Georgia,serif',fontSize:16,lineHeight:2,padding:"16px 20px"}}/>
+                    <EditableHLText text={text} onChange={e=>setTextPersist(e.target.value)} highlights={editHL} color={report?.color||"#9a7a35"}/>
                   </div>
                 )}
               </div>
