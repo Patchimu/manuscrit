@@ -197,7 +197,6 @@ Campos obrigatórios:
 
 Texto:\n\n`;
 
-
 const BIBLE_PROMPT = `Você é um assistente literário especializado em criar "bibles" de livros. Analise o texto abaixo e extraia as informações para preencher o bible do livro. Retorne APENAS um objeto JSON válido, sem markdown, sem texto antes ou depois.
 
 {
