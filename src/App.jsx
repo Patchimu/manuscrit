@@ -1248,7 +1248,7 @@ function BibleKeeperPanel({ data, bibleTab, setBibleTab, bibleEdits, setBibleEdi
 // ── MAIN APP ──────────────────────────────────────────────────────────
 export default function App() {
   const [text, setText] = useState(()=>localStorage.getItem("manuscrit_text")||"");
-  const [phase, setPhase] = useState(()=>localStorage.getItem("manuscrit_phase")||"input");
+  const [phase, setPhase] = useState("input");
   const [activeId, setActiveId] = useState("scoreGeral");
   const [cache, setCache] = useState({});
   const [charts, setCharts] = useState({});
@@ -1413,7 +1413,7 @@ const truncateForAI = (t) => t.length > AI_MAX_CHARS
           </>}
         </div>
         <div style={{display:"flex",gap:8}}>
-          {phase==="done" && <button onClick={()=>{setPhasePersist("input");setCache({});setCharts({});setAiRes({});setMarketData(null);setAiScoreData(null);setActiveId("scoreGeral");setEditMode(false);}} style={{padding:"6px 14px",cursor:"pointer",fontSize:10,fontFamily:"DM Mono",letterSpacing:1.5,borderRadius:2,backgroundColor:"transparent",color:"#9a9088",border:`1px solid ${BORDER}`}}>NOVO TEXTO</button>}
+          {phase==="done" && <button onClick={()=>{setTextPersist("");setPhasePersist("input");setCache({});setCharts({});setAiRes({});setMarketData(null);setAiScoreData(null);setKdpData(null);localStorage.removeItem("manuscrit_kdp");setBibleData(null);setBibleEdits({});localStorage.removeItem("manuscrit_bible");setActiveId("scoreGeral");setEditMode(false);}} style={{padding:"6px 14px",cursor:"pointer",fontSize:10,fontFamily:"DM Mono",letterSpacing:1.5,borderRadius:2,backgroundColor:"transparent",color:"#9a9088",border:`1px solid ${BORDER}`}}>NOVO TEXTO</button>}
           <button onClick={analyze} style={{padding:"7px 20px",cursor:"pointer",fontSize:10,fontFamily:"DM Mono",letterSpacing:1.5,borderRadius:2,backgroundColor:phase==="input"?"#9a7a35":"transparent",color:phase==="input"?"#fff":"#9a7a35",border:"1px solid #9a7a35"}}>{phase==="input"?"ANALISAR":"REANALISAR"}</button>
         </div>
       </header>
