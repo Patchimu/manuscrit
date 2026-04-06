@@ -1423,7 +1423,7 @@ const truncateForAI = (t) => t.length > AI_MAX_CHARS
 
         {/* SIDEBAR */}
         {phase==="done" && (
-          <aside style={{width:210,borderRight:`1px solid ${BORDER}`,overflowY:"auto",padding:"14px 0",flexShrink:0,backgroundColor:SURFACE}}>
+          <aside style={{width:280,borderRight:`1px solid ${BORDER}`,overflowY:"auto",padding:"14px 0",flexShrink:0,backgroundColor:SURFACE}}>
             {CATS.map(cat=>(
               <div key={cat.name} style={{marginBottom:16}}>
                 <div style={{padding:"2px 16px 7px",fontSize:8.5,letterSpacing:3,color:"#c0b8ae",fontFamily:"DM Mono",textTransform:"uppercase"}}>{cat.name}</div>
@@ -1450,10 +1450,10 @@ const truncateForAI = (t) => t.length > AI_MAX_CHARS
         )}
 
         {/* MAIN */}
-        <main style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+        <main style={{flex:1,display:"flex",flexDirection:phase==="done"?"row":"column",overflow:"hidden"}}>
 
           {/* TEXT PANE */}
-          <div style={{flex:phase==="input"?1:"0 0 38%",overflow:"auto",padding:"28px 40px",borderBottom:phase==="done"?`1px solid ${BORDER}`:"none",backgroundColor:BG}}>
+          <div style={{flex:phase==="input"?1:1,overflow:"auto",padding:"28px 40px",backgroundColor:BG}}>
             {phase==="input" ? (
               <div>
                 {!text&&<div style={{marginBottom:20}}><button onClick={()=>setText(SAMPLE)} style={{padding:"5px 14px",backgroundColor:"transparent",color:"#c0b8ae",border:`1px solid ${BORDER}`,borderRadius:2,cursor:"pointer",fontFamily:"DM Mono",fontSize:10,letterSpacing:1.5}}>CARREGAR TEXTO DE EXEMPLO</button></div>}
@@ -1487,7 +1487,7 @@ const truncateForAI = (t) => t.length > AI_MAX_CHARS
 
           {/* RESULTS PANE */}
           {phase==="done" && (
-            <div style={{flex:"0 0 62%",overflow:"auto",padding:"22px 40px",backgroundColor:SURFACE}}>
+            <div style={{flex:1,overflow:"auto",padding:"22px 40px",backgroundColor:SURFACE,borderLeft:`1px solid ${BORDER}`}}>
               <div style={{maxWidth:760,margin:"0 auto"}}>
 
                 {/* Header */}
